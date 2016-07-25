@@ -28,12 +28,12 @@ function hrcase_civicrm_install() {
   }
 
   //update query to replace Case with Assignment
-  $optionGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
+  /*$optionGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
   $sql = "UPDATE civicrm_option_value SET label= replace(label,'Case','Assignment') WHERE label like '%Case%' and option_group_id=$optionGroupID and label <> 'Open Case'";
   CRM_Core_DAO::executeQuery($sql);
 
   $sql = "UPDATE civicrm_option_value SET label= replace(label,'Open Case','Created New Assignment') WHERE label like '%Case%' and option_group_id=$optionGroupID";
-  CRM_Core_DAO::executeQuery($sql);
+  CRM_Core_DAO::executeQuery($sql);*/
 
   $sql = "INSERT INTO `civicrm_relationship_type`
 (`name_a_b`, `label_a_b`, `name_b_a`, `label_b_a`, `description`, `contact_type_a`, `contact_type_b`, `contact_sub_type_a`, `contact_sub_type_b`, `is_reserved`, `is_active`)
@@ -77,7 +77,7 @@ function hrcase_civicrm_postInstall() {
     }
   }
 
-  updateEntityColumnValues();
+  hrcase_updateEntityColumnValues();
 
   $scheduleActions = hrcase_getActionsSchedule();
   foreach($scheduleActions as $actionName=>$scheduleAction) {
@@ -86,6 +86,8 @@ function hrcase_civicrm_postInstall() {
   	  $result = civicrm_api3('action_schedule', 'create', $scheduleAction);
   	}
   }
+
+  hrcase_UpdateCaseTypesComponent();
 }
 
 /**
@@ -93,19 +95,16 @@ function hrcase_civicrm_postInstall() {
  */
 function hrcase_civicrm_uninstall() {
   //update query to replace Assignment with Case
-  $optionGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
+  /*$optionGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
   $sql = "UPDATE civicrm_option_value SET label= replace(label, 'Assignment', 'Case') WHERE label like '%Assignment%' and option_group_id=$optionGroupID and label <> 'New Assignment Created'";
   CRM_Core_DAO::executeQuery($sql);
 
   $sql = "UPDATE civicrm_option_value SET label= replace(label, 'Created New Assignment', 'Open Case') WHERE option_group_id=$optionGroupID";
-  CRM_Core_DAO::executeQuery($sql);
+  CRM_Core_DAO::executeQuery($sql);*/
 
   $scheduleActions = hrcase_getActionsSchedule(TRUE);
   $scheduleAction = implode("','",$scheduleActions );
   CRM_Core_DAO::executeQuery("DELETE FROM civicrm_action_schedule WHERE name IN ('{$scheduleAction}')");
-
-  $sql = "DELETE FROM civicrm_option_value WHERE name IN ('Issue appointment letter','Fill Employee Details Form','Submission of ID/Residence proofs and photos','Program and work induction by program supervisor','Enter employee data in CiviHR','Group Orientation to organization values policies','Probation appraisal','Conduct appraisal','Collection of appraisal paperwork','Issue confirmation/warning letter','Get \"No Dues\" certification','Conduct Exit interview','Revoke access to databases','Block work email ID','Follow up on progress','Collection of Appraisal forms','Issue extension letter','Schedule joining date','Group Orientation to organization, values, policies','Probation appraisal (start probation workflow)','Schedule Exit Interview','Prepare formats','Print formats','Collate and print goals','References Check','Prepare and email schedule')";
-  CRM_Core_DAO::executeQuery($sql);
 
   hrcase_example_caseType(TRUE);
   //delete custom group and custom field
@@ -175,13 +174,6 @@ WHERE civicrm_custom_group.name IN ('Joining_Data', 'Exiting_Data')";
   CRM_Core_DAO::executeQuery($sql);
   CRM_Core_DAO::executeQuery("UPDATE civicrm_custom_group SET is_active = {$setActive} WHERE name IN ('Joining_Data', 'Exiting_Data')");
 
-  //disable/enable activity type
-  $query = "UPDATE civicrm_option_value
-SET is_active = {$setActive}
-WHERE name IN ('Open Case', 'Change Case Type', 'Change Case Status', 'Change Case Start Date', 'Assign Case Role', 'Remove Case Role', 'Merge Case', 'Reassigned Case', 'Link Cases', 'Change Case Tags', 'Add Client To Case','Issue appointment letter','Fill Employee Details Form','Submission of ID/Residence proofs and photos','Program and work induction by program supervisor','Enter employee data in CiviHR','Group Orientation to organization values policies','Probation appraisal','Conduct appraisal','Collection of appraisal paperwork','Issue confirmation/warning letter','Get \"No Dues\" certification','Conduct Exit interview','Revoke access to databases','Block work email ID','Follow up on progress','Collection of Appraisal forms','Issue extension letter','Schedule joining date','Group Orientation to organization, values, policies','Probation appraisal (start probation workflow)','Schedule Exit Interview','Prepare formats','Print formats','Collate and print goals','References Check','Prepare and email schedule')";
-
-  CRM_Core_DAO::executeQuery($query);
-
   //disable/enable action schedule
   $scheduleActions = hrcase_getActionsSchedule(TRUE);
   $scheduleAction = implode("','",$scheduleActions );
@@ -220,9 +212,10 @@ function hrcase_civicrm_managed(&$entities) {
   return _hrcase_civix_civicrm_managed($entities);
 }
 
+
 function hrcase_civicrm_buildForm($formName, &$form) {
   //change pageTitle for adding Case/Assignment Activity
-  if ($formName == 'CRM_Case_Form_Activity'){
+  /*if ($formName == 'CRM_Case_Form_Activity'){
     $contactDisplayName = CRM_Contact_BAO_Contact::displayName($form->getVar('_targetContactId'));
     $viewedContactDisplayName = CRM_Contact_BAO_Contact::displayName($form->_currentlyViewedContactId);
     if ($form->_activityTypeName == 'Created New Assignment') {
@@ -245,7 +238,8 @@ function hrcase_civicrm_buildForm($formName, &$form) {
   //change label and page title
   if ($formName == 'CRM_Case_Form_Case') {
     CRM_Utils_System::setTitle(ts('Create New Assignment'));
-  }
+  }*/
+
   //remove Run QA Audit/Redact dropdown,
   if ($formName == 'CRM_Case_Form_CaseView') {
     if ($form->elementExists('report_id') || $form->elementExists('activity_type_filter_id')){
@@ -355,7 +349,7 @@ function hrcase_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
       $notice_unit = $val['notice_unit'];
     }
     if (isset($notice_amt)) {
-      $revoke = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Revoke access to databases"));
+      $revoke = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Revoke access to databases", 'component_id' => $component_id));
       $block = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Block work email ID", 'component_id' => $component_id));
       $date = strtotime($objectRef->activity_date_time);
       if ($objectRef->activity_type_id == $revoke['value']) {
@@ -370,16 +364,6 @@ function hrcase_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
   }
 }
 
-/**
- * Implementation of hook_civicrm_caseTypes
- *
- * Generate a list of case-types
- *
- * Note: This hook only runs in CiviCRM 4.4+.
- */
-function hrcase_civicrm_caseTypes(&$caseTypes) {
-  _hrcase_civix_civicrm_caseTypes($caseTypes);
-}
 
 function hrcase_getActionsSchedule($getNamesOnly = FALSE) {
   $actionsForActivities = array(
@@ -389,7 +373,7 @@ function hrcase_getActionsSchedule($getNamesOnly = FALSE) {
     'Program_and_work_induction_by_program_supervisor' => 'Program and work induction by program supervisor',
     'Enter_employee_data_in_CiviHR' => 'Enter employee data in CiviHR',
     'Group_Orientation_to_organization_values_policies' => 'Group Orientation to organization, values, policies',
-    'Probation_appraisal' => 'Probation appraisal (start probation workflow)',
+    'Probation_appraisal' => 'Start Probation workflow',
     'Conduct_appraisal' => 'Conduct appraisal',
     'Collection_of_appraisal_paperwork' => 'Collection of appraisal paperwork',
     'Issue_confirmation/warning_letter' => 'Issue confirmation/warning letter',
@@ -485,7 +469,7 @@ function activityCreatedByTaskandAssignments($activity_type_id) {
  * is no longer work with civicrm 4.7.7+.
  *
  */
-function updateEntityColumnValues()  {
+function hrcase_updateEntityColumnValues()  {
   $caseTypes = CRM_Case_PseudoConstant::caseType('name');
   $exitingValue = array_search('Exiting', $caseTypes);
   $exitingValue = CRM_Core_DAO::VALUE_SEPARATOR . $exitingValue . CRM_Core_DAO::VALUE_SEPARATOR;
@@ -527,4 +511,16 @@ function hrcase_extensionsPageRedirect()  {
     ])
   );
   CRM_Utils_System::redirect($url);
+}
+
+/**
+ * execute sql file the change the component ID for activity types
+ * created via managed entities hook from CiviCase to CiviTask
+ *
+ */
+function hrcase_UpdateCaseTypesComponent()  {
+  $filePath = __DIR__ . '/sql/update_activityTypes.sql';
+  if (file_exists($filePath)) {
+    CRM_Utils_File::sourceSQLFile(CIVICRM_DSN, $filePath);
+  }
 }

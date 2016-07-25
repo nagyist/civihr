@@ -107,7 +107,7 @@ class CRM_Case_BAO_CaseType extends CRM_Case_DAO_CaseType {
    * @static
    * @access public
    */
-  static function convertDefinitionToXML($name, $definition) {
+  public static function convertDefinitionToXML($name, $definition) {
     $xmlFile = '<?xml version="1.0" encoding="utf-8" ?>' . "\n\n<CaseType>\n";
     $xmlFile .= "<name>{$name}</name>\n";
 
