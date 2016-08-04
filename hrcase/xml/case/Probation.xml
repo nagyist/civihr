@@ -49,18 +49,15 @@
       <ActivityTypes>
         <ActivityType>
           <name>Conduct appraisal</name>
-          <reference_offset>1</reference_offset>
-          <reference_select>newest</reference_select>
+          <reference_offset>-24</reference_offset>
         </ActivityType>
         <ActivityType>
           <name>Collection of appraisal paperwork</name>
-          <reference_offset>21</reference_offset>
-          <reference_select>newest</reference_select>
+          <reference_offset>-3</reference_offset>
         </ActivityType>
         <ActivityType>
           <name>Issue confirmation/warning letter</name>
-          <reference_offset>24</reference_offset>
-          <reference_select>newest</reference_select>
+          <reference_offset>0</reference_offset>
         </ActivityType>
       </ActivityTypes>
     </ActivitySet>

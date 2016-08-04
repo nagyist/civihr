@@ -77,7 +77,7 @@ function hrcase_civicrm_postInstall() {
     }
   }
 
-  updateEntityColumnValues();
+  hrcase_updateEntityColumnValues();
 
   $scheduleActions = hrcase_getActionsSchedule();
   foreach($scheduleActions as $actionName=>$scheduleAction) {
@@ -103,9 +103,6 @@ function hrcase_civicrm_uninstall() {
   $scheduleActions = hrcase_getActionsSchedule(TRUE);
   $scheduleAction = implode("','",$scheduleActions );
   CRM_Core_DAO::executeQuery("DELETE FROM civicrm_action_schedule WHERE name IN ('{$scheduleAction}')");
-
-  $sql = "DELETE FROM civicrm_option_value WHERE name IN ('Issue appointment letter','Fill Employee Details Form','Submission of ID/Residence proofs and photos','Program and work induction by program supervisor','Enter employee data in CiviHR','Group Orientation to organization values policies','Probation appraisal','Conduct appraisal','Collection of appraisal paperwork','Issue confirmation/warning letter','Get \"No Dues\" certification','Conduct Exit interview','Revoke access to databases','Block work email ID','Follow up on progress','Collection of Appraisal forms','Issue extension letter','Schedule joining date','Group Orientation to organization, values, policies','Probation appraisal (start probation workflow)','Schedule Exit Interview','Prepare formats','Print formats','Collate and print goals','References Check','Prepare and email schedule')";
-  CRM_Core_DAO::executeQuery($sql);
 
   hrcase_example_caseType(TRUE);
   //delete custom group and custom field
@@ -174,13 +171,6 @@ WHERE civicrm_custom_group.name IN ('Joining_Data', 'Exiting_Data')";
 
   CRM_Core_DAO::executeQuery($sql);
   CRM_Core_DAO::executeQuery("UPDATE civicrm_custom_group SET is_active = {$setActive} WHERE name IN ('Joining_Data', 'Exiting_Data')");
-
-  //disable/enable activity type
-  $query = "UPDATE civicrm_option_value
-SET is_active = {$setActive}
-WHERE name IN ('Open Case', 'Change Case Type', 'Change Case Status', 'Change Case Start Date', 'Assign Case Role', 'Remove Case Role', 'Merge Case', 'Reassigned Case', 'Link Cases', 'Change Case Tags', 'Add Client To Case','Issue appointment letter','Fill Employee Details Form','Submission of ID/Residence proofs and photos','Program and work induction by program supervisor','Enter employee data in CiviHR','Group Orientation to organization values policies','Probation appraisal','Conduct appraisal','Collection of appraisal paperwork','Issue confirmation/warning letter','Get \"No Dues\" certification','Conduct Exit interview','Revoke access to databases','Block work email ID','Follow up on progress','Collection of Appraisal forms','Issue extension letter','Schedule joining date','Group Orientation to organization, values, policies','Probation appraisal (start probation workflow)','Schedule Exit Interview','Prepare formats','Print formats','Collate and print goals','References Check','Prepare and email schedule')";
-
-  CRM_Core_DAO::executeQuery($query);
 
   //disable/enable action schedule
   $scheduleActions = hrcase_getActionsSchedule(TRUE);
@@ -355,7 +345,7 @@ function hrcase_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
       $notice_unit = $val['notice_unit'];
     }
     if (isset($notice_amt)) {
-      $revoke = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Revoke access to databases"));
+      $revoke = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Revoke access to databases", 'component_id' => $component_id));
       $block = civicrm_api3('OptionValue', 'getsingle', array('return' => "value", 'name' => "Block work email ID", 'component_id' => $component_id));
       $date = strtotime($objectRef->activity_date_time);
       if ($objectRef->activity_type_id == $revoke['value']) {
@@ -389,7 +379,7 @@ function hrcase_getActionsSchedule($getNamesOnly = FALSE) {
     'Program_and_work_induction_by_program_supervisor' => 'Program and work induction by program supervisor',
     'Enter_employee_data_in_CiviHR' => 'Enter employee data in CiviHR',
     'Group_Orientation_to_organization_values_policies' => 'Group Orientation to organization, values, policies',
-    'Probation_appraisal' => 'Probation appraisal (start probation workflow)',
+    'Probation_appraisal' => 'Start Probation workflow',
     'Conduct_appraisal' => 'Conduct appraisal',
     'Collection_of_appraisal_paperwork' => 'Collection of appraisal paperwork',
     'Issue_confirmation/warning_letter' => 'Issue confirmation/warning letter',
@@ -485,7 +475,7 @@ function activityCreatedByTaskandAssignments($activity_type_id) {
  * is no longer work with civicrm 4.7.7+.
  *
  */
-function updateEntityColumnValues()  {
+function hrcase_updateEntityColumnValues()  {
   $caseTypes = CRM_Case_PseudoConstant::caseType('name');
   $exitingValue = array_search('Exiting', $caseTypes);
   $exitingValue = CRM_Core_DAO::VALUE_SEPARATOR . $exitingValue . CRM_Core_DAO::VALUE_SEPARATOR;
