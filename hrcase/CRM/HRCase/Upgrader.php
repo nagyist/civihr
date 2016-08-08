@@ -195,10 +195,4 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
     return TRUE;
   }
 
-  public function upgrade_1500() {
-    $this->executeSqlFile('sql/update_activityTypes.sql');
-
-    return TRUE;
-  }
-
 }

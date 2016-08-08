@@ -38,11 +38,6 @@ UPDATE `civicrm_option_value` SET component_id = @compId WHERE name IN
     'Confirm End of Probation Date'
   );
 
-/* cases with the following names are created twice , the first during civicrm installation
-   by default , and second time when enabling hrcase extension via hrcase_civicrm_caseTypes hook
-   so we remove the ones created by hrcase_civicrm_caseTypes hook here because we don't want duplicates
-  */
-DELETE FROM civicrm_option_value WHERE name IN ('Open Case', 'Follow up', 'Change Case Type', 'Change Case Status', 'Change Case Start Date', 'Link Cases') AND `is_reserved` != 1;
 
 /* check hrcase_civicrm_post for more info */
 SELECT @caseCompId := id FROM `civicrm_component` where `name` like 'CiviCase';
