@@ -545,7 +545,7 @@ function hrcase_createDefaultCaseTypes()  {
     if ($caseType == NULL)  {
       $caseParams = $case['params'];
       CRM_Case_BAO_CaseType::create($caseParams);
-      hrcase_createDefaultActivityTypes($caseParams['definition']['activityTypes'], 'CiviTask');
+      hrcase_createDefaultActivityTypes($case['params']['definition']['activityTypes'], 'CiviTask');
     }
   }
 
@@ -568,6 +568,8 @@ function hrcase_createDefaultActivityTypes($activityTypes, $componentName)  {
 
   $componentID = CRM_Core_Component::getComponentID($componentName);
 
+  $maxValue = CRM_Core_BAO_OptionValue::getDefaultValue(['option_group_id' => $activityGroupID]);
+  $maxWeight = CRM_Core_BAO_OptionValue::getDefaultWeight(['option_group_id' => $activityGroupID]);
   $values = [];
   foreach ($activityTypes as $activity)  {
     $params =
@@ -578,13 +580,18 @@ function hrcase_createDefaultActivityTypes($activityTypes, $componentName)  {
       ];
     $activityType = CRM_Core_BAO_OptionValue::retrieve($params, $defaults);
     if ($activityType == NULL)  {
-      $values[] = '("'.$params['name'].'", '.$params['option_group_id'].', '. $componentID .')';
+      $values[] = "('" . $activity['name'] . "', " .
+        $activityGroupID . ", " .
+        "'" . $activity['name'] . "', " .
+        ++$maxValue . ", " .
+        ++$maxWeight . ", " .
+        $componentID . ")";
     }
   }
 
   if (!empty($values))  {
     $sql = "INSERT INTO civicrm_option_value
-          (name, option_group_id, component_id)
+          (name, option_group_id, label, value, weight, component_id)
           VALUES " . implode(',', $values);
     CRM_Core_DAO::executeQuery($sql);
   }
@@ -674,7 +681,7 @@ function hrcase_toggleDefaultCaseTypes($status)  {
     $caseType = CRM_Case_BAO_CaseType::retrieve($params, $defaults);
     if ($caseType != NULL)  {
       $IDs[] = $caseType->id;
-      hrcase_toggleDefaultActivityTypes($case['params']['definition']['activityTypes'], $status);
+      hrcase_toggleDefaultActivityTypes($case['params']['definition']['activityTypes'], 'CiviTask', $status);
     }
   }
 
@@ -689,7 +696,7 @@ function hrcase_toggleDefaultCaseTypes($status)  {
       ['name' => 'Revoke access to databases'],
       ['name' => 'Block work email ID']
     ];
-  hrcase_toggleDefaultActivityTypes($specialActivityTypes, $status);
+  hrcase_toggleDefaultActivityTypes($specialActivityTypes, 'CiviCase' , $status);
 }
 
 /**
@@ -697,9 +704,9 @@ function hrcase_toggleDefaultCaseTypes($status)  {
  *
  */
 
-function hrcase_toggleDefaultActivityTypes($activityTypes, $status)  {
+function hrcase_toggleDefaultActivityTypes($activityTypes, $componentName, $status)  {
   $activityGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
-  $componentID = CRM_Core_Component::getComponentID('CiviTask');
+  $componentID = CRM_Core_Component::getComponentID($componentName);
 
   $IDs = [];
   foreach ($activityTypes as $type)  {
