@@ -566,7 +566,7 @@ function hrcase_createDefaultActivityTypes($activityTypes, $componentName)  {
   $defaults = NULL;
   $activityGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
 
-  $componentID = CRM_Core_Component::getComponentID($componentName);
+  $componentID = hrcase_getComponentID($componentName);
 
   $maxValue = CRM_Core_BAO_OptionValue::getDefaultValue(['option_group_id' => $activityGroupID]);
   $maxWeight = CRM_Core_BAO_OptionValue::getDefaultWeight(['option_group_id' => $activityGroupID]);
@@ -636,7 +636,7 @@ function hrcase_removeDefaultActivityTypes($activityTypes, $componentName)  {
   $defaults = NULL;
   $activityGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
 
-  $componentID = CRM_Core_Component::getComponentID($componentName);
+  $componentID = hrcase_getComponentID($componentName);
 
   $IDs = [];
   foreach ($activityTypes as $activity)  {
@@ -706,7 +706,7 @@ function hrcase_toggleDefaultCaseTypes($status)  {
 
 function hrcase_toggleDefaultActivityTypes($activityTypes, $componentName, $status)  {
   $activityGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
-  $componentID = CRM_Core_Component::getComponentID($componentName);
+  $componentID = hrcase_getComponentID($componentName);
 
   $IDs = [];
   foreach ($activityTypes as $type)  {
@@ -740,7 +740,7 @@ function hrcase_toggleDefaultActivityTypes($activityTypes, $componentName, $stat
 function hrcase_updateSystemActivityTypes($componentName)  {
 
   $activityGroupID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
-  $componentID = CRM_Core_Component::getComponentID($componentName);
+  $componentID = hrcase_getComponentID($componentName);
 
   $activityTypes =
     [
@@ -770,5 +770,20 @@ function hrcase_updateSystemActivityTypes($componentName)  {
             WHERE id IN (" . implode(',', $IDs) . ")";
     CRM_Core_DAO::executeQuery($sql);
   }
+}
+
+/**
+ * get component ID from its name
+ *
+ */
+
+function hrcase_getComponentID($componentName)  {
+  $sql = "SELECT id FROM civicrm_component WHERE name = '{$componentName}'";
+  $result = CRM_Core_DAO::executeQuery($sql);
+  if($result->fetch()) {
+    return $result->id;
+  }
+
+  return NULL;
 }
 
