@@ -2,7 +2,7 @@
 <extension key="org.civicrm.hrcase" type="module">
   <file>hrcase</file>
   <name>Case (CiviHR)</name>
-  <description>Tweaks in Cases component for human resources</description>
+  <description>Prepares Task and Assignments Extension for CiviHR use</description>
   <license>AGPL</license>
   <maintainer>
     <author>CiviCRM LLC</author>

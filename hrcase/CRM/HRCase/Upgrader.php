@@ -1,4 +1,5 @@
 <?php
+
 require_once 'Upgrader/Base.php';
 
 /**
@@ -6,24 +7,22 @@ require_once 'Upgrader/Base.php';
  */
 class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
 
-  // By convention, functions that look like "function upgrade_NNNN()" are
-  // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
-
   /**
-   * Example: Run an external SQL script when the module is installed
+   * Updates or Creates any required data for
+   * the extension to work
    */
   public function install() {
     // Enable CiviCase component
-    $this->setComponentStatuses(array(
+    $this->setComponentStatuses([
       'CiviCase' => true,
-    ));
+    ]);
 
     // Execute upgrader methods during extension installation
     $revisions = $this->getRevisions();
     foreach ($revisions as $revision) {
       $methodName = 'upgrade_' . $revision;
 
-      if (is_callable(array($this, $methodName))) {
+      if (is_callable([$this, $methodName])) {
         $this->{$methodName}();
       }
     }
@@ -33,16 +32,18 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
    * Set components as enabled or disabled. Leave any other
    * components unmodified.
    *
+   * @param array $components
+   *   keys are component names (e.g. "CiviMail"); values are booleans
    *
-   * @param array $components keys are component names (e.g. "CiviMail"); values are booleans
    * @throws CRM_Core_Exception
+   *
    * @return bool
    */
   public function setComponentStatuses($components) {
-    $getResult = civicrm_api3('setting', 'getsingle', array(
+    $getResult = civicrm_api3('setting', 'getsingle', [
       'domain_id' => CRM_Core_Config::domainID(),
-      'return' => array('enable_components'),
-    ));
+      'return' => ['enable_components'],
+    ]);
     if (!is_array($getResult['enable_components'])) {
       throw new CRM_Core_Exception("Failed to determine component statuses");
     }
@@ -51,23 +52,24 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
     $enableComponents = $getResult['enable_components'];
     foreach ($components as $component => $status) {
       if ($status) {
-        $enableComponents = array_merge($enableComponents, array($component));
+        $enableComponents = array_merge($enableComponents, [$component]);
       } else {
-        $enableComponents = array_diff($enableComponents, array($component));
+        $enableComponents = array_diff($enableComponents, [$component]);
       }
     }
-    civicrm_api3('setting', 'create', array(
+    civicrm_api3('setting', 'create', [
       'domain_id' => CRM_Core_Config::domainID(),
       'enable_components' => array_unique($enableComponents),
-    ));
+    ]);
     CRM_Core_Component::flushEnabledComponents();
   }
 
 
   /**
    * Upgrader to :
-   *   1- Replace (case) with (assignment) for some default activity types.
-   *   2- Create some relationship types.
+   *   1- Replaces (case) keyword with (assignment) keyword for civicrm default activity types.
+   *   2- Creates some default relationship types.
+   *
    * @return bool
    */
   public function upgrade_1400() {
@@ -80,11 +82,13 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
   }
 
   /**
-   * Replace (Case) and (Open Case) with (Assignment) and (Created New Assignment)
-   * respectively and vise versa.
+   * Replaces (Case) keyword and (Open Case) keyword with (Assignment) keyword
+   * and (Created New Assignment) keyword respectively and vise versa for
+   * civicrm default activity types labels when installing/uninstalling the extension.
    *
-   * @param boolean $restDefault If true revert activity types labels to their default
-   *   ( For uninstall/disable).
+   * @param boolean $restDefault
+   *   If true revert activity types labels to their default
+   *  ( For uninstall/disable).
    */
   public static function activityTypesWordReplacement($restDefault = false) {
     $replace = 'Assignment';
@@ -115,53 +119,50 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
   }
 
   /**
-   * Create a defined list of relationship types
-   *
+   * Creates default relationship types
    */
   public static function createRelationshipTypes() {
-    $toInsert = '';
-    foreach(self::relationshipsTypesList() as $relationship) {
-      $toInsert .= "('{$relationship['name_a_b']}','{$relationship['name_a_b']}','{$relationship['name_b_a']}','{$relationship['name_b_a']}','{$relationship['name_b_a']}','Individual','Individual',NULL,NULL,0,1),";
+    foreach(self::defaultRelationshipsTypes() as $relationshipType) {
+      civicrm_api3('RelationshipType', 'create', [
+        'name_a_b' => $relationshipType['name_a_b'],
+        'label_a_b' => $relationshipType['name_b_a'],
+        'name_b_a' => $relationshipType['name_b_a'],
+        'label_b_a' => $relationshipType['name_b_a'],
+        'contact_type_a' => 'Individual',
+        'contact_type_b' => 'Individual',
+        'is_reserved' => 0,
+        'is_active' => 1,
+      ]);
     }
-    $toInsert = rtrim($toInsert, ',');
-    $sql = "INSERT INTO `civicrm_relationship_type`
-            (
-            `name_a_b`,
-            `label_a_b`,
-            `name_b_a`,
-            `label_b_a`,
-            `description`,
-            `contact_type_a`,
-            `contact_type_b`,
-            `contact_sub_type_a`,
-            `contact_sub_type_b`,
-            `is_reserved`,
-            `is_active`)
-            VALUES {$toInsert}";
-    CRM_Core_DAO::executeQuery($sql);
   }
 
   /**
-   * Remove a defined list of relationship types
-   *
+   * Removes default relationship types
    */
   public static function removeRelationshipTypes() {
-    $toDelete = CRM_Utils_Array::collect('name_b_a', self::relationshipsTypesList());
-    $toDelete = implode("','", $toDelete);
-    $sql = "DELETE FROM `civicrm_relationship_type` WHERE name_b_a IN ('{$toDelete}')";
-    CRM_Core_DAO::executeQuery($sql);
+    foreach(self::defaultRelationshipsTypes() as $relationshipType) {
+      // chained API call to delete the relationship type
+      civicrm_api3('RelationshipType', 'get', [
+        'name_b_a' => $relationshipType['name_b_a'],
+        'api.RelationshipType.delete' => ['id' => '$value.id'],
+      ]);
+    }
   }
 
   /**
-   * (Enable/Disable) a defined list of relationship types
+   * (Enables/Disables) a defined list of relationship types
    *
-   * @param int $setActive 0 : disable , 1 : enable
+   * @param int $setActive
+   *   0 : disable , 1 : enable
    */
   public static function toggleRelationshipTypes($setActive) {
-    $toToggle = CRM_Utils_Array::collect('name_b_a', self::relationshipsTypesList());
-    $toToggle = implode("','", $toToggle);
-    $sql = "UPDATE `civicrm_relationship_type` SET is_active={$setActive} WHERE name_b_a IN ('{$toToggle}')";
-    CRM_Core_DAO::executeQuery($sql);
+    foreach(self::defaultRelationshipsTypes() as $relationshipType) {
+      // chained API call to activate/disable the relationship type
+      civicrm_api3('RelationshipType', 'get', [
+        'name_b_a' => $relationshipType['name_b_a'],
+        'api.RelationshipType.create' => ['id' => 'value.id', 'is_active' => $setActive],
+      ]);
+    }
   }
 
   /**
@@ -169,17 +170,35 @@ class CRM_HRCase_Upgrader extends CRM_HRCase_Upgrader_Base {
    *
    * @return array
    */
-  public static function relationshipsTypesList() {
+  public static function defaultRelationshipsTypes() {
     $list = [
       ['name_a_b' => 'HR Manager is', 'name_b_a' => 'HR Manager', 'description' => 'HR Manager'],
       ['name_a_b' => 'Line Manager is', 'name_b_a' => 'Line Manager', 'description' => 'Line Manager'],
     ];
 
     // (Recruiting Manager) should be included only if hrrecruitment extension is disabled.
-    if (!_hrcase_isExtensionEnabled('org.civicrm.hrrecruitment')) {
+    if (!self::isExtensionEnabled('org.civicrm.hrrecruitment')) {
       $list = array_merge($list, [ ['name_a_b' => 'Recruiting Manager is', 'name_b_a' => 'Recruiting Manager', 'description' => 'Recruiting Manager'] ]);
     }
     return $list;
+  }
+
+  /**
+   * Checks if tasks and assignments extension is installed or enabled
+   *
+   * @param String $key
+   *   Extension unique key
+   *
+   * @return boolean
+   */
+  public static function isExtensionEnabled($key)  {
+    $isEnabled = CRM_Core_DAO::getFieldValue(
+      'CRM_Core_DAO_Extension',
+      $key,
+      'is_active',
+      'full_name'
+    );
+    return  !empty($isEnabled) ? true : false;
   }
 
 }

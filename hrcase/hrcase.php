@@ -13,7 +13,7 @@ function hrcase_civicrm_config(&$config) {
 /**
  * Implementation of hook_civicrm_xmlMenu
  *
- * @param $files array(string)
+ * @param array $files
  */
 function hrcase_civicrm_xmlMenu(&$files) {
   _hrcase_civix_civicrm_xmlMenu($files);
@@ -24,8 +24,8 @@ function hrcase_civicrm_xmlMenu(&$files) {
  */
 function hrcase_civicrm_install() {
   // PCHR-1263 : hrcase should not be installed without Task & Assignments extension
-  if (!_hrcase_isExtensionEnabled('uk.co.compucorp.civicrm.tasksassignments'))  {
-    _hrcase_extensionsPageRedirect();
+  if (!CRM_HRCase_Upgrader::isExtensionEnabled('uk.co.compucorp.civicrm.tasksassignments'))  {
+    _hrcase_TaskAndAssignmentsPageRedirect();
   }
 
   _hrcase_civix_civicrm_install();
@@ -46,8 +46,8 @@ function hrcase_civicrm_uninstall() {
  */
 function hrcase_civicrm_enable() {
   // PCHR-1263 : hrcase should not be installed/enabled without Task & Assignments extension
-  if (!_hrcase_isExtensionEnabled('uk.co.compucorp.civicrm.tasksassignments'))  {
-    _hrcase_extensionsPageRedirect();
+  if (!CRM_HRCase_Upgrader::isExtensionEnabled('uk.co.compucorp.civicrm.tasksassignments'))  {
+    _hrcase_TaskAndAssignmentsPageRedirect();
   }
 
   CRM_HRCase_Upgrader::toggleRelationshipTypes(1);
@@ -64,14 +64,16 @@ function hrcase_civicrm_disable() {
   _hrcase_civix_civicrm_disable();
 }
 
-
 /**
  * Implementation of hook_civicrm_upgrade
  *
- * @param $op string, the type of operation being performed; 'check' or 'enqueue'
- * @param $queue CRM_Queue_Queue, (for 'enqueue') the modifiable list of pending up upgrade tasks
+ * @param string $op
+ *   The type of operation being performed; 'check' or 'enqueue'
+ * @param CRM_Queue_Queue $queue
+ *   (for 'enqueue') the modifiable list of pending up upgrade tasks
  *
- * @return mixed  based on op. for 'check', returns array(boolean) (TRUE if upgrades are pending)
+ * @return mixed
+ *   based on op. for 'check', returns array(boolean) (TRUE if upgrades are pending)
  *                for 'enqueue', returns void
  */
 function hrcase_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
@@ -100,26 +102,9 @@ function hrcase_civicrm_caseTypes(&$caseTypes) {
 }
 
 /**
- * check if tasks and assignments extension is installed or enabled
- *
- * @param String $key Extension unique key
- * @return boolean
- */
-function _hrcase_isExtensionEnabled($key)  {
-  $isEnabled = CRM_Core_DAO::getFieldValue(
-    'CRM_Core_DAO_Extension',
-    $key,
-    'is_active',
-    'full_name'
-  );
-  return  !empty($isEnabled) ? true : false;
-}
-
-/**
  * redirect to extension list page and show error notification if T&A isn't installed/enabled
- *
  */
-function _hrcase_extensionsPageRedirect()  {
+function _hrcase_TaskAndAssignmentsPageRedirect()  {
   $message = ts("You should Install/Enable Task & Assignments extension first");
   CRM_Core_Session::setStatus($message, ts('Cannot install/enable extension'), 'error');
   $url = CRM_Utils_System::url(
