@@ -49,15 +49,19 @@ class CRM_HRLeaveAndAbsences_BAO_LeaveRequestTest extends BaseHeadlessTest {
     CRM_Core_DAO::executeQuery("SET foreign_key_checks = 1;");
   }
 
-  public function testALeaveRequestWithOnlyTheStartDateShouldCreateOnlyOneLeaveRequestDate()
+  public function testALeaveRequestWithSameStartAndEndDateShouldCreateOnlyOneLeaveRequestDate()
   {
     $fromDate = new DateTime();
+    $date = $fromDate->format('YmdHis');
     $leaveRequest = LeaveRequestFabricator::fabricateWithoutValidation([
       'type_id' => 1,
       'contact_id' => 1,
       'status_id' => 1, //The status is not important here. We just need a value to be stored in the DB
-      'from_date' => $fromDate->format('YmdHis'),
-      'from_date_type' => 1 //The type is not important here. We just need a value to be stored in the DB
+      'from_date' => $date,
+      'from_date_type' => 1,
+      'to_date' => $date,
+      'to_date_type' => 1,
+
     ]);
 
     $dates = $leaveRequest->getDates();
@@ -90,12 +94,15 @@ class CRM_HRLeaveAndAbsences_BAO_LeaveRequestTest extends BaseHeadlessTest {
   public function testUpdatingALeaveRequestShouldNotDuplicateTheLeaveRequestDates()
   {
     $fromDate = new DateTime();
+    $date = $fromDate->format('YmdHis');
     $leaveRequest = LeaveRequestFabricator::fabricateWithoutValidation([
       'type_id' => 1,
       'contact_id' => 1,
       'status_id' => 1,
-      'from_date' => $fromDate->format('YmdHis'),
-      'from_date_type' => 1
+      'from_date' => $date,
+      'from_date_type' => 1,
+      'to_date' => $date,
+      'to_date_type' => 1
     ]);
 
     $dates = $leaveRequest->getDates();
@@ -1419,13 +1426,16 @@ class CRM_HRLeaveAndAbsences_BAO_LeaveRequestTest extends BaseHeadlessTest {
     //there's a public holiday on the leave request day
     $fromDate = new DateTime('2016-11-16');
     $fromType = $this->leaveRequestDayTypes['All Day']['id'];
+    $date = $fromDate->format('YmdHis');
 
     LeaveRequest::create([
       'type_id' => $absenceType->id,
       'contact_id' => $contact['id'],
       'status_id' => 1,
-      'from_date' => $fromDate->format('Ymd'),
+      'from_date' => $date,
       'from_date_type' => $fromType,
+      'to_date' => $date,
+      'to_date_type' => $fromType
     ]);
   }
 
